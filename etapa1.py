@@ -36,7 +36,7 @@ class ULA:
             S = a_val | b_val
             vai_um = 0
         elif operacao == 2:  # F0=1, F1=0: XOR
-            S = a_val ^ b_val
+            S = (~b_val) & 0xFFFFFFFF
             vai_um = 0
         else:  # operacao == 3: F0=1, F1=1: Soma (full adder)
             # Implementar somador completo de 32 bits
