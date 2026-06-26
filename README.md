@@ -1,6 +1,6 @@
 # Simulador da ULA da Mic-1
 O projeto é um simulador da ULA (Unidade Lógica e Aritmética) da arquitetura Mic-1, feito em Python como trabalho prático de **Arquitetura de Computadores II**.
-A Mic-1 é uma máquina virtual didática descrita no livro do Tanenbaum, usada para ensinar como funciona o nível de microprogramação de um processador. A ULA é o componente que executa as operações matemáticas e lógicas — AND, OR, NOT, soma — e este simulador reproduz exatamente esse comportamento.
+A Mic-1 é uma máquina virtual didática descrita no livro do Tanenbaum, usada para ensinar como funciona o nível de microprogramação de um processador. A ULA é o componente que executa as operações matemáticas e lógicas(AND, OR, NOT, soma) e este simulador reproduz exatamente esse comportamento.
 O funcionamento é simples: você fornece dois registradores de 32 bits (A e B) e uma sequência de instruções de 6 bits cada. A cada "ciclo de clock", o simulador lê uma instrução, decodifica os sinais de controle (F0, F1, ENA, ENB, INVA, INC) e calcula o resultado da ULA, gravando tudo num arquivo de saída.
 
 ## Integrantes
