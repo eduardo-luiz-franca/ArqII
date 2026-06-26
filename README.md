@@ -1,117 +1,147 @@
-# Simulador da ULA da Mic-1 - Etapa 1
+# Simulador da ULA da Mic-1
+O projeto é um simulador da ULA (Unidade Lógica e Aritmética) da arquitetura Mic-1, feito em Python como trabalho prático de **Arquitetura de Computadores II**.
+A Mic-1 é uma máquina virtual didática descrita no livro do Tanenbaum, usada para ensinar como funciona o nível de microprogramação de um processador. A ULA é o componente que executa as operações matemáticas e lógicas — AND, OR, NOT, soma — e este simulador reproduz exatamente esse comportamento.
+O funcionamento é simples: você fornece dois registradores de 32 bits (A e B) e uma sequência de instruções de 6 bits cada. A cada "ciclo de clock", o simulador lê uma instrução, decodifica os sinais de controle (F0, F1, ENA, ENB, INVA, INC) e calcula o resultado da ULA, gravando tudo num arquivo de saída.
 
-## Resumo Executivo
+## Integrantes
+- Leandro Cipriano
+- Luiz Eduardo dos Santos
+- Rickison de Lima Paula
+- Ryan Costa Sobreira
 
-Este é um simulador em Python da Unidade Lógica e Aritmética (ULA) da máquina virtual Mic-1, implementando a Etapa 1 (APS) do projeto de Arquitetura de Computadores II.
+---
 
-## Operações da ULA
+# Funcionamento dos Registradores e Entradas
+Este simulador opera com valores de registradores estáticos fornecidos no arquivo de configuração inicial.
 
-A ULA executa 4 operações lógico-aritméticas selecionadas por 6 bits de controle:
+O arquivo `registradores.txt` deve conter exatamente **duas linhas**, cada uma com **32 bits binários**:
 
-| F0 | F1 | Operação | Descrição |
-|----|----|-----------|----|
-| 0  | 0  | AND | Operação E bit a bit |
-| 0  | 1  | OR | Operação OU bit a bit |
-| 1  | 0  | NOT B | Complementa B |
-| 1  | 1  | SOMA | Soma aritmética com carry |
+1. A primeira linha define o valor do registrador **A**.
+2. A segunda linha define o valor do registrador **B**.
 
-**Sinais de Controle:**
-- **ENA**: Habilita entrada A (desabilitado = 0)
-- **ENB**: Habilita entrada B (desabilitado = 0)
-- **INVA**: Se 1, força saída s=0 e carry=1 (ignora operação)
-- **INC**: Incrementa resultado (apenas em SOMA)
+Após serem carregados no início da execução, esses valores permanecem inalterados durante toda a simulação. A cada ciclo de clock, a ULA reutiliza os mesmos valores de **A** e **B**, alterando apenas a instrução executada a partir do arquivo `instruções.txt`.
 
-## Formato do Arquivo de Entrada
+---
 
-Arquivo `programa_etapa1.txt`:
+# Arquivo de Instruções
+O arquivo `instruções.txt` representa a memória de programa do simulador.
+Cada linha corresponde a uma instrução executada em um ciclo de clock.
 
-```
-B_inicial (32 bits binários)
-A_inicial (32 bits binários)
-A_ciclo1 (32 bits binários)
-IR1 (6 bits)
-A_ciclo2 (32 bits binários)
-IR2 (6 bits)
-A_ciclo3 (32 bits binários)
-IR3 (6 bits)
-...
-```
+## Regras
+- Cada linha representa uma única instrução.
+- Cada instrução deve conter **exatamente 6 bits binários**.
+- Apenas os caracteres `0` e `1` são permitidos.
+- Não devem existir espaços ou separadores.
 
-## Lógica da ULA
+A ordem dos bits deve seguir exatamente o padrão da Mic-1:
 
-```python
-if INVA == 1:
-    s = 0
-    co = 1
-else:
-    A_eff = A if ENA else 0
-    B_eff = B if ENB else 0
-    
-    if F0==0, F1==0:    s = A_eff & B_eff
-    elif F0==0, F1==1:  s = A_eff | B_eff
-    elif F0==1, F1==0:  s = ~B_eff
-    else:               s = A_eff + B_eff + INC
-    
-    co = 1 if s > 0xFFFFFFFF else 0
+```text
+F0 F1 ENA ENB INVA INC
 ```
 
-## Execução
+---
+
+# Sinais de Controle da ULA
+Os seis bits controlam o comportamento da ULA.
+
+## F0 e F1
+Selecionam a operação executada.
+
+| F0 | F1 | Operação |
+|----|----|----------|
+| 0  | 0  | AND (A AND B) |
+| 0  | 1  | OR (A OR B) |
+| 1  | 0  | NOT B |
+| 1  | 1  | SOMA (A + B + INC) |
+
+## ENA
+Habilita a entrada A.
+- `1` → utiliza o valor de A.
+- `0` → força `A_eff = 0`.
+
+## ENB
+Habilita a entrada B.
+- `1` → utiliza o valor de B.
+- `0` → força `B_eff = 0`.
+
+## INVA
+Quando este bit é igual a `1`, a ULA ignora completamente a operação selecionada e força:
+- `s = 0`
+- `co = 1`
+
+## INC
+Bit de incremento.
+É utilizado apenas na operação de soma, adicionando `1` ao resultado final.
+
+---
+
+# Execução
+Execute o simulador utilizando:
 
 ```bash
 python etapa1.py
 ```
 
-**Entrada:** `programa_etapa1.txt`  
-**Saída:** `saida_etapa1.txt`
+Durante a execução, o programa:
 
-Formato da saída:
-```
-b = [32 bits]
-a = [32 bits]
+1. Lê os registradores em `registradores.txt`;
+2. Lê todas as instruções de `instruções.txt`;
+3. Executa uma instrução por ciclo de clock;
+4. Gera o arquivo `saida.txt`.
 
-Start of Program
-============================================================
-Cycle 1
+- Caso o arquivo de saída não exista, ele será criado automaticamente.
+- Caso já exista, seu conteúdo será completamente sobrescrito.
 
-PC = 1
-IR = [6 bits]
-b = [32 bits]
-a = [32 bits]
-s = [32 bits]
-co = [1 bit]
-============================================================
-Cycle 2
-...
-```
+---
 
-## Observações Importantes
+# Exemplo do Arquivo de Registradores
 
-- INVA=1 **sempre** força s=0 e co=1, ignorando a operação
-- NOT B inverte todos os 32 bits de B
-- Carry é detectado quando resultado > 0xFFFFFFFF
-- Valores são em complemento a 2 de 32 bits
-- PC (Program Counter) começa em 1
-
-## Exemplo
-
-**Entrada:**
-```
-00000000000000000000000000000001  (B = 1)
-11111111111111111111111111111111  (A = -1)
-11111111111111111111111111111111  (A ciclo 1 = -1)
-111100                            (IR1: SOMA, ENA=1, ENB=1, INVA=1, INC=0)
-```
-
-**Saída esperada (Ciclo 1):**
-```
-PC = 1
-IR = 111100
-b = 00000000000000000000000000000001
-a = 11111111111111111111111111111111
-s = 00000000000000000000000000000000  (INVA=1 → s=0)
-co = 1                                (INVA=1 → co=1)
+`registradores.txt`
+```text
+11111111111111111111111111111111
+00000000000000000000000000000001
 ```
 
 ---
 
-**Status:** ✅ Funcionando corretamente - Etapa 1 implementada
+# Exemplo do Arquivo de Instruções
+
+`instruções.txt`
+```text
+111100
+001100
+011100
+```
+
+---
+
+# Exemplo de Saída
+
+`saida.txt`
+```text
+Start of Program
+============================================================
+Cycle 1
+PC = 1
+IR = 111100
+b  = 00000000000000000000000000000001
+a  = 11111111111111111111111111111111
+s  = 00000000000000000000000000000000
+co = 1
+============================================================
+Cycle 2
+PC = 2
+IR = 001100
+...
+```
+
+Cada ciclo apresenta:
+
+- **PC** (Program Counter)
+- **IR** (Instruction Register)
+- Valor do registrador **A**
+- Valor do registrador **B**
+- Saída da ULA (**s**)
+- **Carry Out** (co)
+
+Todos os valores são exibidos em binário utilizando representação em **complemento de dois de 32 bits**.
