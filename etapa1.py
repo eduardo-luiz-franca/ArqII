@@ -1,24 +1,25 @@
 class ULA:
-    def executar(self, F0, F1, ENA, ENB, INVA, INC, A, B):
+    def executar(self, F0, F1, INVA, INC, a_val, b_val):
         if INVA == 1:
             return 0, 1
 
-        a_val = A & 0xFFFFFFFF if ENA == 1 else 0
-        b_val = B & 0xFFFFFFFF if ENB == 1 else 0
-
-        operacao = (F0 << 1) | F1
-
-        if operacao == 0:
-            resultado = a_val & b_val
-        elif operacao == 1:
-            resultado = a_val | b_val
-        elif operacao == 2:
-            resultado = (~b_val) & 0xFFFFFFFF
+        # Descobre a operação combinando F0 e F1
+        if F0 == 0 and F1 == 0:
+            resultado = a_val & b_val  # AND
+        elif F0 == 0 and F1 == 1:
+            resultado = a_val | b_val  # OR
+        elif F0 == 1 and F1 == 0:
+            resultado = (~b_val) & 0xFFFFFFFF  # NOT B
         else:
-            resultado = a_val + b_val + INC
+            resultado = a_val + b_val + INC  # SOMA
 
+        # Aplica a máscara de 32 bits e calcula o carry out
         S = resultado & 0xFFFFFFFF
-        vai_um = 1 if resultado > 0xFFFFFFFF else 0
+        
+        if resultado > 0xFFFFFFFF:
+            vai_um = 1
+        else:
+            vai_um = 0
 
         return S, vai_um
 
@@ -27,54 +28,59 @@ class Simulador:
     def __init__(self):
         self.ula = ULA()
 
-    def extrair_bits(self, instrucao_str):
-        if len(instrucao_str) != 6:
-            raise ValueError(f"Instrução deve ter 6 bits, recebeu: {instrucao_str}")
-        return (int(instrucao_str[0]), int(instrucao_str[1]), int(instrucao_str[2]),
-                int(instrucao_str[3]), int(instrucao_str[4]), int(instrucao_str[5]))
+    def carregar_arquivos(self, arq_reg, arq_inst):
+        # Lê registradores
+        with open(arq_reg, 'r') as f:
+            linhas = [ln.strip() for ln in f if ln.strip()]
+        a = int(linhas[0], 2)
+        b = int(linhas[1], 2)
 
-    def carregar_registradores(self, arquivo):
-        with open(arquivo, 'r') as f:
-            linhas = [linha.strip() for linha in f.readlines() if linha.strip()]
-        registradores = []
-        for i in range(0, len(linhas), 2):
-            a = int(linhas[i], 2) if i < len(linhas) else 0
-            b = int(linhas[i + 1], 2) if i + 1 < len(linhas) else 0
-            registradores.append((a, b))
-        return registradores
-
-    def carregar_instrucoes(self, arquivo):
-        with open(arquivo, 'r') as f:
-            linhas = [linha.strip() for linha in f.readlines() if linha.strip()]
-        return linhas
+        # Lê instruções
+        with open(arq_inst, 'r') as f:
+            instrucoes = [ln.strip() for ln in f if ln.strip()]
+            
+        return a, b, instrucoes
 
     def executar(self, arquivo_registradores, arquivo_instrucoes, arquivo_saida):
-        registradores = self.carregar_registradores(arquivo_registradores)
-        instrucoes = self.carregar_instrucoes(arquivo_instrucoes)
+        a_orig, b_orig, instrucoes = self.carregar_arquivos(arquivo_registradores, arquivo_instrucoes)
 
         saida = []
+        saida.append(f"b = {b_orig:032b}")
+        saida.append(f"a = {a_orig:032b}\n")
         saida.append("Start of Program")
         saida.append("=" * 60)
 
-        for pc, ir_bin in enumerate(instrucoes, 1):
-            a, b = registradores[pc - 1] if pc - 1 < len(registradores) else (0, 0)
+        for i, ir_bin in enumerate(instrucoes):
+            pc = i + 1
+
+            # Extrai os bits diretamente por indexação da string
+            F0, F1, ENA, ENB, INVA, INC = (int(bit) for bit in ir_bin)
+            
+            # Aplica os sinais de controle de habilitação (ENA / ENB) uma única vez
+            a_ciclo = a_orig if ENA == 1 else 0
+            b_ciclo = b_orig if ENB == 1 else 0
 
             saida.append(f"Cycle {pc}\n")
             saida.append(f"PC = {pc}")
             saida.append(f"IR = {ir_bin}")
-            saida.append(f"b = {b:032b}")
-            saida.append(f"a = {a:032b}")
+            saida.append(f"b = {b_ciclo:032b}")
+            saida.append(f"a = {a_ciclo:032b}")
 
-            F0, F1, ENA, ENB, INVA, INC = self.extrair_bits(ir_bin)
-            s, co = self.ula.executar(F0, F1, ENA, ENB, INVA, INC, a, b)
+            # Passa os valores já validados para a ULA
+            s, co = self.ula.executar(F0, F1, INVA, INC, a_ciclo, b_ciclo)
 
             saida.append(f"s = {s:032b}")
             saida.append(f"co = {co}")
-            saida.append("=" * 60)
+            
+            if pc < len(instrucoes):
+                saida.append("=" * 60)
 
-        saida.append(f"Cycle {len(instrucoes) + 1}\n")
-        saida.append(f"PC = {len(instrucoes) + 1}")
-        saida.append("> Line is empty, EOP.\n")
+        # Ciclo de fim de programa (EOP)
+        ciclo_final = len(instrucoes) + 1
+        saida.append("=" * 60)
+        saida.append(f"Cycle {ciclo_final}\n")
+        saida.append(f"PC = {ciclo_final}")
+        saida.append("> Line is empty, EOP.")
 
         with open(arquivo_saida, 'w') as f:
             f.write('\n'.join(saida))
@@ -82,7 +88,7 @@ class Simulador:
 
 def main():
     sim = Simulador()
-    sim.executar('registradores_etapa1.txt', 'programa_etapa1.txt', 'saida_etapa1.txt')
+    sim.executar('registradores.txt', 'instruções.txt', 'saida.txt')
 
 
 if __name__ == '__main__':
