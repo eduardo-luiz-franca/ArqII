@@ -4,7 +4,7 @@ A Mic-1 é uma máquina virtual didática descrita no livro do Tanenbaum, usada 
 O funcionamento é simples: você fornece dois registradores de 32 bits (A e B) e uma sequência de instruções de 6 bits cada. A cada "ciclo de clock", o simulador lê uma instrução, decodifica os sinais de controle (F0, F1, ENA, ENB, INVA, INC) e calcula o resultado da ULA, gravando tudo num arquivo de saída.
 
 ## Integrantes
-- Leandro Cipriano
+- Leandro Cipriano da Silva
 - Luiz Eduardo dos Santos
 - Rickison de Lima Paula
 - Ryan Costa Sobreira
