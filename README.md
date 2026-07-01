@@ -1,9 +1,11 @@
-# Simulador da ULA da Mic-1
-O projeto é um simulador da ULA (Unidade Lógica e Aritmética) da arquitetura Mic-1, feito em Python como trabalho prático de **Arquitetura de Computadores II**.
-A Mic-1 é uma máquina virtual didática descrita no livro do Tanenbaum, usada para ensinar como funciona o nível de microprogramação de um processador. A ULA é o componente que executa as operações matemáticas e lógicas — AND, OR, NOT, soma — e este simulador reproduz exatamente esse comportamento.
-O funcionamento é simples: você fornece dois registradores de 32 bits (A e B) e uma sequência de instruções de 6 bits cada. A cada "ciclo de clock", o simulador lê uma instrução, decodifica os sinais de controle (F0, F1, ENA, ENB, INVA, INC) e calcula o resultado da ULA, gravando tudo num arquivo de saída.
+# Simulador da Mic-1 Modificada
+
+Projeto da disciplina **Arquitetura de Computadores II** (UFPB-CI-DSC, Profª. Sarah Pontes Madruga), que implementa em Python, de forma incremental, uma microarquitetura baseada na máquina Mic-1 apresentada por Tanenbaum, capaz de interpretar instruções da ISA da IJVM.
+
+O projeto é dividido em etapas, cada uma em sua própria pasta, construindo progressivamente a ULA, o caminho de dados e, por fim, o acesso à memória e a tradução de instruções da IJVM em microinstruções.
 
 ## Integrantes
+
 - Leandro Cipriano
 - Luiz Eduardo dos Santos
 - Rickison de Lima Paula
@@ -11,137 +13,40 @@ O funcionamento é simples: você fornece dois registradores de 32 bits (A e B) 
 
 ---
 
-# Funcionamento dos Registradores e Entradas
-Este simulador opera com valores de registradores estáticos fornecidos no arquivo de configuração inicial.
+## Etapas
 
-O arquivo `registradores.txt` deve conter exatamente **duas linhas**, cada uma com **32 bits binários**:
+### Etapa 1 — ULA da Mic-1 (6 bits)
 
-1. A primeira linha define o valor do registrador **A**.
-2. A segunda linha define o valor do registrador **B**.
+Implementação da ULA da Mic-1 com sinais de controle de 6 bits (`F0 F1 ENA ENB INVA INC`), lendo uma sequência de instruções de um arquivo `.txt` e gerando um log com IR, PC, A, B, S e Vai-um a cada ciclo.
 
-Após serem carregados no início da execução, esses valores permanecem inalterados durante toda a simulação. A cada ciclo de clock, a ULA reutiliza os mesmos valores de **A** e **B**, alterando apenas a instrução executada a partir do arquivo `instruções.txt`.
 
----
+### Etapa 2, Tarefa 1 — ULA de 8 bits com deslocador
 
-# Arquivo de Instruções
-O arquivo `instruções.txt` representa a memória de programa do simulador.
-Cada linha corresponde a uma instrução executada em um ciclo de clock.
+Pasta: [`etapa2t1/`](etapa2t1/)
 
-## Regras
-- Cada linha representa uma única instrução.
-- Cada instrução deve conter **exatamente 6 bits binários**.
-- Apenas os caracteres `0` e `1` são permitidos.
-- Não devem existir espaços ou separadores.
+Extensão da ULA da Etapa 1 para uma palavra de controle de 8 bits (`SLL8 SRA1 F0 F1 ENA ENB INVA INC`), adicionando o deslocador (lógico à esquerda em 8 bits ou aritmético à direita em 1 bit) e as saídas N (negativo) e Z (zero).
 
-A ordem dos bits deve seguir exatamente o padrão da Mic-1:
+### Etapa 2, Tarefa 2 — Caminho de dados completo
 
-```text
-F0 F1 ENA ENB INVA INC
-```
+Pasta: [`etapa2t2/`](etapa2t2/)
+
+Implementação dos dez registradores da Mic-1 (H, OPC, TOS, CPP, LV, SP, PC, MDR, MAR e MBR), do decodificador de 4 bits do barramento B e do seletor de 9 bits do barramento C. O código passa a interpretar instruções de 21 bits (`ULA[8] C[9] B[4]`), conectando a ULA aos registradores conforme o caminho de dados da Mic-1, e gera um log completo do estado dos registradores antes/depois de cada ciclo.
 
 ---
 
-# Sinais de Controle da ULA
-Os seis bits controlam o comportamento da ULA.
+## Execução
 
-## F0 e F1
-Selecionam a operação executada.
-
-| F0 | F1 | Operação |
-|----|----|----------|
-| 0  | 0  | AND (A AND B) |
-| 0  | 1  | OR (A OR B) |
-| 1  | 0  | NOT B |
-| 1  | 1  | SOMA (A + B + INC) |
-
-## ENA
-Habilita a entrada A.
-- `1` → utiliza o valor de A.
-- `0` → força `A_eff = 0`.
-
-## ENB
-Habilita a entrada B.
-- `1` → utiliza o valor de B.
-- `0` → força `B_eff = 0`.
-
-## INVA
-Quando este bit é igual a `1`, a ULA ignora completamente a operação selecionada e força:
-- `s = 0`
-- `co = 1`
-
-## INC
-Bit de incremento.
-É utilizado apenas na operação de soma, adicionando `1` ao resultado final.
-
----
-
-# Execução
-Execute o simulador utilizando:
+Cada etapa é independente e é executada a partir de sua própria pasta:
 
 ```bash
+cd etapa1
 python etapa1.py
+
+cd etapa2t1
+python etapa2t1.py
+
+cd etapa2t2
+python etapa2t2.py
 ```
 
-Durante a execução, o programa:
-
-1. Lê os registradores em `registradores.txt`;
-2. Lê todas as instruções de `instruções.txt`;
-3. Executa uma instrução por ciclo de clock;
-4. Gera o arquivo `saida.txt`.
-
-- Caso o arquivo de saída não exista, ele será criado automaticamente.
-- Caso já exista, seu conteúdo será completamente sobrescrito.
-
----
-
-# Exemplo do Arquivo de Registradores
-
-`registradores.txt`
-```text
-11111111111111111111111111111111
-00000000000000000000000000000001
-```
-
----
-
-# Exemplo do Arquivo de Instruções
-
-`instruções.txt`
-```text
-111100
-001100
-011100
-```
-
----
-
-# Exemplo de Saída
-
-`saida.txt`
-```text
-Start of Program
-============================================================
-Cycle 1
-PC = 1
-IR = 111100
-b  = 00000000000000000000000000000001
-a  = 11111111111111111111111111111111
-s  = 00000000000000000000000000000000
-co = 1
-============================================================
-Cycle 2
-PC = 2
-IR = 001100
-...
-```
-
-Cada ciclo apresenta:
-
-- **PC** (Program Counter)
-- **IR** (Instruction Register)
-- Valor do registrador **A**
-- Valor do registrador **B**
-- Saída da ULA (**s**)
-- **Carry Out** (co)
-
-Todos os valores são exibidos em binário utilizando representação em **complemento de dois de 32 bits**.
+Os arquivos de entrada (registradores/instruções) e o arquivo de saída gerado ficam dentro da pasta de cada etapa.
