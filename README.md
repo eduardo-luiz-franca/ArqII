@@ -32,6 +32,18 @@ Pasta: [`etapa2t2/`](etapa2t2/)
 
 Implementação dos dez registradores da Mic-1 (H, OPC, TOS, CPP, LV, SP, PC, MDR, MAR e MBR), do decodificador de 4 bits do barramento B e do seletor de 9 bits do barramento C. O código passa a interpretar instruções de 21 bits (`ULA[8] C[9] B[4]`), conectando a ULA aos registradores conforme o caminho de dados da Mic-1, e gera um log completo do estado dos registradores antes/depois de cada ciclo.
 
+### Etapa 3, Tarefa 1 — Acesso à memória
+
+Pasta: [`etapa3/`](etapa3/)
+
+Adiciona os 2 bits de comando da memória (`WRITE READ`), levando a microinstrução a 23 bits (`ULA[8] C[9] MEM[2] B[4]`). Uma memória de dados carregada de arquivo passa a ser acessada via MAR/MDR: `READ` copia `memória[MAR]` para MDR e `WRITE` grava MDR em `memória[MAR]`, sempre **após** a saída da ULA ter sido escrita nos registradores do barramento C. O log inclui o estado da memória após cada microinstrução.
+
+### Entregável — Instruções IJVM
+
+Pasta: [`entregavel/`](entregavel/)
+
+Reconhece as instruções da IJVM `ILOAD x`, `DUP` e `BIPUSH byte` em um arquivo `.txt`, traduz cada uma para a sequência apropriada de microinstruções de 23 bits (o número de `H = H+1` do `ILOAD` varia com o argumento, e o `fetch` do `BIPUSH` embute o byte nos 8 primeiros bits da palavra, com WRITE=READ=1 como marcador do caso especial) e as executa na Mic-1 das etapas anteriores. O log mostra a memória antes do programa, a tradução de cada instrução, os registradores antes/depois de cada microinstrução, os barramentos B/C e a memória após cada instrução.
+
 ---
 
 ## Execução
@@ -47,6 +59,12 @@ python etapa2t1.py
 
 cd etapa2t2
 python etapa2t2.py
+
+cd etapa3
+python etapa3t1.py
+
+cd entregavel
+python entregavel.py
 ```
 
 Os arquivos de entrada (registradores/instruções) e o arquivo de saída gerado ficam dentro da pasta de cada etapa.
